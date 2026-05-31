@@ -26,6 +26,42 @@ profiles and GIS alignments.
 Install the required Python packages, including `ezdxf`, `geopandas`, `shapely`,
 `numpy`, `Pillow`, `pyproj`, `matplotlib`, and `requests`.
 
+## Required Inputs
+
+Update the paths in `scripts/config.py` to match the local project folders.
+The generator requires:
+
+- A SewerGEMS profile DXF named `<channel-name>.dxf`, such as
+  `Ais-CH1-FP.dxf`. It must contain the profile grid, annotation table, ground
+  elevation, hydraulic grade, crown, invert, structures, and annotations.
+- A channel alignment shapefile, such as `Channels Block 06.shp`. Its attribute
+  table must include a `Name` field matching the requested channel name.
+- An A1 plan-profile DXF template, such as `Plan Profile.dxf`, containing the
+  sheet border and title block.
+- Internet access to Esri World Imagery for the initial satellite-tile
+  download. Downloaded tiles are cached locally in `IMG/tiles/`.
+
+The configured source data is read from the project folders and is not modified.
+
+## Generated Outputs
+
+Running `scripts/make_sheet.py` creates versioned files in `DXF/`:
+
+- `<channel-name>-Sheet<sheet-number>_v<version>.dxf`: the A1 plan-profile
+  drawing.
+- `<channel-name>_S<sheet-number>_sat_v<version>.png`: the satellite image
+  referenced by the generated DXF.
+
+The sheet DXF includes the plan alignment, station ticks and labels, satellite
+background, north arrow, scale bar, profile traces, profile grid, annotation
+table, and updated title-block text.
+
+Optional review outputs can also be generated:
+
+- `scripts/view_frames.py` creates a PDF overview of the sheet frames.
+- `scripts/make_vf_dxf.py` creates a DXF overview of the sheet frames in UTM
+  coordinates.
+
 Generate the first sheet:
 
 ```powershell
@@ -36,6 +72,4 @@ The generated DXF and its satellite PNG are written to `DXF/`.
 
 ## Local Data
 
-The scripts expect the source SewerGEMS DXF, shapefile, and title-block template
-to exist in the configured project data folders. Generated DXFs, imagery, PDF
-exports, and tile caches are ignored by Git.
+Generated DXFs, imagery, PDF exports, and tile caches are ignored by Git.
