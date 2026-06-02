@@ -83,7 +83,7 @@ LAYER_COLORS = {
 PROF_TEXT_H = {
     "Grid_Text":        4.0,   # elevation axis + station labels  (×2 from before)
     "Annotation":       4.5,   # conduit & structure annotations
-    "Annotation_Table": 3.5,   # data-band table cells
+    "Annotation_Table": 4.2,   # data-band table cells
     "Structure":        3.5,   # manhole labels
 }
 

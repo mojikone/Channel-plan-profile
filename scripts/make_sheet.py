@@ -79,6 +79,7 @@ TEXT_STYLE     = "TIMES_NEW_ROMAN"
 
 BAND_LABELS = {
     "Length (Unified) (m)": "Length (m)",
+    "Conduit Description":   "Size",
     "Slope (Calculated) (m/m)": "Slope (m/m)",
     "Elevation (Ground) (m)": "Ground Elev (m)",
     "Elevation (Invert) (m)": "Invert Elev (m)",
