@@ -17,7 +17,7 @@ repo-root/
 ├── make_vf_dxf.py         # (optional) Exports view frames as UTM DXF for review
 │
 ├── Data/                  # ← INPUT — place your project data here
-│   ├── DXF/               # SewerGEMS profile DXF files (one per channel)
+│   ├── DXF/               # SewerGEMS profile DXF files — one per channel (e.g. Ais-CH1-FP.dxf)
 │   ├── SHP/
 │   │   ├── Channels.shp           # Channel alignment shapefile
 │   │   ├── Buffers/
@@ -28,11 +28,12 @@ repo-root/
 │   └── Template/
 │       └── Plan Profile.dxf       # A1 title-block template DXF
 │
-├── DXF/                   # ← OUTPUT — generated sheet DXFs + satellite images
+├── DXF/                   # ← OUTPUT — generated plan+profile DXFs + satellite images (.jpg)
 ├── PDF/                   # ← OUTPUT — individual sheet PDFs
 │   └── Combined/          # ← OUTPUT — one combined PDF per channel
-└── IMG/
-    └── tiles/             # Satellite tile cache (auto-populated on first run)
+├── IMG/
+│   └── tiles/             # Satellite tile cache (auto-populated on first run)
+└── view_frames/           # ← OUTPUT — view-frame overview PNGs (optional debug)
 ```
 
 ---
