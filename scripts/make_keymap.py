@@ -376,12 +376,11 @@ def _draw_scale_bar_km(msp, km_scale):
 # Title-block update
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _update_title_km(pspace, channel_name, km_scale, n_sheets):
+def _update_title_km(pspace, channel_name, km_scale, n_sheets, doc_no=""):
     title     = f"Key Map - {channel_name}   ({n_sheets} sheets)"
     h_sc      = _round_scale(round(1000 / km_scale))
     scale_txt = f"1:{h_sc}"
     today     = datetime.date.today().strftime("%d.%m.%Y")
-    doc_no    = "2224-PD-HY-PP-B6-000"
     _once    = {"SCALE": scale_txt, "DOC_NO1": doc_no, "DRAWING-TITLE1": title}
     _written = set()
 
@@ -408,7 +407,7 @@ def _update_title_km(pspace, channel_name, km_scale, n_sheets):
 # Main entry point
 # ─────────────────────────────────────────────────────────────────────────────
 
-def make_keymap(channel_name="Ais-CH1-FP", gdf_lu=None, gdf_bufs=None):
+def make_keymap(channel_name="Ais-CH1-FP", gdf_lu=None, gdf_bufs=None, doc_no=""):
     print(f"\nBuilding key map for {channel_name} ...")
 
     gdf_all = gpd.read_file(SHP_PATH)
@@ -495,7 +494,7 @@ def make_keymap(channel_name="Ais-CH1-FP", gdf_lu=None, gdf_bufs=None):
         dxfattribs={"layer": "KM_BORDER", "color": 7, "lineweight": 35})
 
     # ── Title block ───────────────────────────────────────────────────────────
-    _update_title_km(pspace, channel_name, km_scale, len(frames))
+    _update_title_km(pspace, channel_name, km_scale, len(frames), doc_no=doc_no)
 
     # ── Save ──────────────────────────────────────────────────────────────────
     out = os.path.join(OUT_DXF, f"{channel_name}-KeyMap_v{version}.dxf")

@@ -94,6 +94,11 @@ PROF_X_MARGIN = 25.0    # m
 # ── Channels whose shapefile digitisation is opposite to the profile DXF ──────
 REVERSED_CHANNELS = {"Taw-CH5-SM"}
 
+# ── Drawing set order ─────────────────────────────────────────────────────────
+# Catchments processed in this order; within each, channels by CH number.
+CATCHMENT_ORDER = ["Ais", "Rus", "Ban", "Maa", "Taw", "Ful"]
+DOC_NO_PREFIX   = "2224-PD-HY-PP-B6"
+
 # ── Overlay shapefiles ────────────────────────────────────────────────────────
 SHP_BUF_BED = os.path.join(ROOT, "Data", "SHP", "Buffers", "B6 Channel Bed Buffer.shp")
 SHP_BUF_CH  = os.path.join(ROOT, "Data", "SHP", "Buffers", "B6 Channels Buffer 16042026.shp")

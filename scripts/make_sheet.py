@@ -767,14 +767,13 @@ def _round_scale(n):
     return min(standards, key=lambda s: abs(s - n))
 
 
-def _update_title(pspace, channel_name, vf, n_sheets):
+def _update_title(pspace, channel_name, vf, n_sheets, doc_no=""):
     title = (f"Plan & Profile Of {channel_name}  "
              f"{vf.sta_start} - {vf.sta_end}     "
              f"Sheet #{vf.index} of {n_sheets}")
     h_sc  = _round_scale(round(1000 / PLAN_SCALE))
     scale = f"1:{h_sc}"
     today  = datetime.date.today().strftime("%d.%m.%Y")
-    doc_no = f"2224-PD-HY-PP-B6-{vf.index:03d}"
 
     # Tags that should only be written to the first INSERT that contains them
     _once = {"SCALE": scale, "DOC_NO1": doc_no, "DRAWING-TITLE1": title}
@@ -804,7 +803,7 @@ def _update_title(pspace, channel_name, vf, n_sheets):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def make_sheet(channel_name="Ais-CH1-FP", sheet_index=1,
-               gdf_lu=None, gdf_bufs=None):
+               gdf_lu=None, gdf_bufs=None, doc_no=""):
     """
     gdf_lu   : GeoDataFrame of land-use polygons (pre-loaded, optional)
     gdf_bufs : list of (label, GeoDataFrame) for buffer layers (optional)
@@ -871,7 +870,7 @@ def make_sheet(channel_name="Ais-CH1-FP", sheet_index=1,
             pspace.delete_entity(e)
 
     # Update title block
-    _update_title(pspace, channel_name, vf, len(frames))
+    _update_title(pspace, channel_name, vf, len(frames), doc_no=doc_no)
 
     # Ensure needed layers exist
     for layer, col in LAYER_COLORS.items():
