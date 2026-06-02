@@ -37,6 +37,7 @@ from config import (
     VP_PROF_W,  VP_PROF_H,
     SEGMENT_LEN, PLAN_ALONG_M, PLAN_PERP_M, PLAN_MARGIN_M,
     LAYER_COLORS, PROF_TEXT_H, PROF_X_MARGIN,
+    REVERSED_CHANNELS,
 )
 from view_frames import compute_view_frames, warp_satellite_to_frame
 
@@ -815,6 +816,8 @@ def make_sheet(channel_name="Ais-CH1-FP", sheet_index=1,
     if row.empty:
         raise ValueError(f"Channel '{channel_name}' not found.")
     geom    = row.iloc[0].geometry
+    if channel_name in REVERSED_CHANNELS:
+        geom = LineString(list(geom.coords)[::-1])
 
     # Case-insensitive search for profile DXF
     prof_path = os.path.join(DXF_DIR, f"{channel_name}.dxf")

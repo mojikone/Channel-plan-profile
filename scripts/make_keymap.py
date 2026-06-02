@@ -23,6 +23,7 @@ from config import (
     VP_PROF_Y0,
     VP_PLAN_W,  VP_PLAN_H,
     SEGMENT_LEN, PLAN_PERP_M,
+    REVERSED_CHANNELS,
 )
 
 # Key-map uses the FULL content area (plan + profile zones combined)
@@ -415,6 +416,9 @@ def make_keymap(channel_name="Ais-CH1-FP", gdf_lu=None, gdf_bufs=None):
     if row.empty:
         raise ValueError(f"Channel '{channel_name}' not found.")
     geom = row.iloc[0].geometry
+    if channel_name in REVERSED_CHANNELS:
+        from shapely.geometry import LineString
+        geom = LineString(list(geom.coords)[::-1])
 
     _, frames = compute_view_frames(channel_name)
     vf_key, km_scale = _keymap_viewframe(geom)

@@ -91,6 +91,9 @@ PROF_TEXT_H = {
 # Leaves 25 m of "breathing space" so text at sta 0 and 1+000 is not clipped
 PROF_X_MARGIN = 25.0    # m
 
+# ── Channels whose shapefile digitisation is opposite to the profile DXF ──────
+REVERSED_CHANNELS = {"Taw-CH5-SM"}
+
 # ── Overlay shapefiles ────────────────────────────────────────────────────────
 SHP_BUF_BED = os.path.join(ROOT, "Data", "SHP", "Buffers", "B6 Channel Bed Buffer.shp")
 SHP_BUF_CH  = os.path.join(ROOT, "Data", "SHP", "Buffers", "B6 Channels Buffer 16042026.shp")
