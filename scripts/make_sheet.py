@@ -417,6 +417,43 @@ def _copy_profile_entities(msp, profile_doc, c_start, c_end, y_lo, band_params):
                             align=TextEntityAlignment.MIDDLE_RIGHT)
         e += 2
 
+    # ── Station strip: DXF Grid_Text labels at fixed y just above band ───────
+    STATION_STRIP_H = 9.0          # mm height of the strip
+    station_y       = prof_band_top + STATION_STRIP_H / 2   # text centre y
+    station_line_y  = prof_band_top + STATION_STRIP_H       # top border of strip
+
+    # Collect station labels from Grid_Text for this chainage window
+    grid_stations = []
+    for entity in profile_doc.modelspace():
+        if entity.dxftype() != "TEXT":
+            continue
+        if "Grid_Text" not in entity.dxf.get("layer", ""):
+            continue
+        ins = entity.dxf.get("insert", (0, 0, 0))
+        ex, ey = ins[0], ins[1]
+        if not (x_min - 1 <= ex <= x_max + 1):
+            continue
+        val = _acad_unicode(entity.dxf.get("text", "")).strip()
+        if _re.match(r"^-?\d+\+\d+$", val):
+            xp = PROF_DATA_X0 + (ex - (c_start - PROF_X_MARGIN)) * PROF_SCALE_X
+            if PROF_DATA_X0 <= xp <= PROF_DATA_X1:
+                grid_stations.append((ex, xp, val))
+
+    grid_stations.sort(key=lambda t: t[0])
+    # Draw labels at 50 m multiples only (0+000, 0+050, 0+100 …)
+    for ex, xp, _ in grid_stations:
+        if int(round(ex)) % 50 != 0:
+            continue
+        val = _station_text(ex)
+        if val is None:
+            continue
+        msp.add_text(
+            val,
+            dxfattribs={"layer": "Grid_Text", "color": 7,
+                        "height": 5.0, "style": TEXT_STYLE,
+                        "insert": (xp, station_y)},
+        ).set_placement((xp, station_y), align=TextEntityAlignment.MIDDLE_CENTER)
+
     # ── Profile frame boxes ───────────────────────────────────────────────────
     for pts in [
         [(VP_PROF_X0, VP_PROF_Y0), (VP_PROF_X1, VP_PROF_Y0),
