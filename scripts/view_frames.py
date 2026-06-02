@@ -112,6 +112,11 @@ def compute_view_frames(channel_name, seg_len=SEGMENT_LEN,
         raise ValueError(f"Channel '{channel_name}' not found in shapefile.")
 
     geom  = row.iloc[0].geometry
+    # Channels whose shapefile digitisation runs opposite to the profile DXF direction
+    REVERSED_CHANNELS = {"Taw-CH5-SM"}
+    if channel_name in REVERSED_CHANNELS:
+        from shapely.geometry import LineString
+        geom = LineString(list(geom.coords)[::-1])
     total = geom.length   # m (UTM)
     print(f"  Channel: {channel_name}  total length: {total:.0f} m")
 

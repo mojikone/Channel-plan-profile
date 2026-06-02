@@ -188,15 +188,17 @@ def _seg_y_range(profile_doc, c_start, c_end, band_params):
         t = e.dxftype()
         if t == "LWPOLYLINE":
             for p in e.get_points():
-                if c_start - 1 <= p[0] <= c_end + 1 and p[1] > chart_bottom:
+                # Include ALL y values (even negative) so low-elevation channels
+                # get a correct chart window centred on their actual data.
+                if c_start - 1 <= p[0] <= c_end + 1:
                     ys.append(p[1])
         elif t == "POLYLINE":
             for v in e.vertices:
                 x, y = v.dxf.location[0], v.dxf.location[1]
-                if c_start - 1 <= x <= c_end + 1 and y >= chart_bottom:
+                if c_start - 1 <= x <= c_end + 1:
                     ys.append(y)
     if not ys:
-        fallback = band_y_max + 400.0
+        fallback = band_params["y_max"] + 400.0
         return fallback, fallback - 55.0, fallback + 55.0
     y_mid = (min(ys) + max(ys)) / 2
     y_lo  = y_mid - CHART_WIN_DXF / 2
@@ -278,8 +280,9 @@ def _copy_profile_entities(msp, profile_doc, c_start, c_end, y_lo, band_params):
     def _source_segments(raw, layer):
         if len(raw) < 2:
             return []
-        # Include band area as well as chart area in clip box
-        y_clip_min = band_ymin if any(y < chart_bottom for _, y in raw) else y_lo
+        # Data layers can have y < chart_bottom (negative elevation); use y_lo for them
+        is_data_layer = any(dl.lower() in layer.lower() for dl in DATA_LAYERS) if layer else False
+        y_clip_min = y_lo if is_data_layer else (band_ymin if any(y < chart_bottom for _, y in raw) else y_lo)
         clipped = LineString(raw).intersection(
             shapely_box(x_min, y_clip_min, x_max, y_hi)
         )
@@ -291,8 +294,13 @@ def _copy_profile_entities(msp, profile_doc, c_start, c_end, y_lo, band_params):
             return [list(g.coords) for g in clipped.geoms]
         return []
 
-    def _p2p(x, y):
-        return prof_to_paper(x, y, c_start, y_lo, band_params)
+    def _p2p(x, y, force_chart=False):
+        xp = PROF_DATA_X0 + (x - (c_start - PROF_X_MARGIN)) * PROF_SCALE_X
+        if force_chart or y > band_params["chart_bottom"]:
+            yp = prof_band_top + (y - y_lo) * CHART_SCALE_Y
+        else:
+            yp = VP_PROF_Y0 + (y - band_params["y_min"]) * band_params["scale_y"]
+        return xp, yp
 
     for entity in profile_doc.modelspace():
         t     = entity.dxftype()
@@ -312,8 +320,9 @@ def _copy_profile_entities(msp, profile_doc, c_start, c_end, y_lo, band_params):
 
             lw  = entity.dxf.get("lineweight", 25)
             lw  = max(13, lw) if lw > 0 else 25
+            is_data = any(dl.lower() in layer.lower() for dl in DATA_LAYERS)
             for pts in _source_segments(raw, layer):
-                paper = [_p2p(x, y) for x, y in pts]
+                paper = [_p2p(x, y, force_chart=is_data) for x, y in pts]
                 if (layer == BAND_LAYER and len(paper) >= 2
                         and abs(paper[0][1] - paper[-1][1]) < 0.01):
                     edge = min(range(len(paper)), key=lambda i: paper[i][0])
@@ -415,7 +424,7 @@ def _copy_profile_entities(msp, profile_doc, c_start, c_end, y_lo, band_params):
         e += 2
 
     # ── Station strip: DXF Grid_Text labels at fixed y just above band ───────
-    STATION_STRIP_H = 9.0          # mm height of the strip
+    STATION_STRIP_H = _text_h("Grid_Text") * 1.6   # mm height of the strip
     station_y       = prof_band_top + STATION_STRIP_H / 2   # text centre y
     station_line_y  = prof_band_top + STATION_STRIP_H       # top border of strip
 
@@ -446,8 +455,8 @@ def _copy_profile_entities(msp, profile_doc, c_start, c_end, y_lo, band_params):
             continue
         msp.add_text(
             val,
-            dxfattribs={"layer": "Grid_Text", "color": 7,
-                        "height": 5.0, "style": TEXT_STYLE,
+            dxfattribs={"layer": "Grid_Text", "color": 8,
+                        "height": _text_h("Grid_Text"), "style": TEXT_STYLE,
                         "insert": (xp, station_y)},
         ).set_placement((xp, station_y), align=TextEntityAlignment.MIDDLE_CENTER)
 
