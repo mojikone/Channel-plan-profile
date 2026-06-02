@@ -352,12 +352,8 @@ def _copy_profile_entities(msp, profile_doc, c_start, c_end, y_lo, band_params):
             if "Grid_Text" in layer or "Annotation_Table" in layer:
                 if _re.match(r"^-?\d+\+\d+$", val.strip()):
                     if "Grid_Text" in layer:
-                        # Chart axis labels: keep only 50 m multiples, reformat
-                        if int(round(x)) % 50:
-                            continue
-                        val = _station_text(x)
-                        if val is None:
-                            continue
+                        # Station strip handles these — skip from chart copy
+                        continue
                     # Annotation_Table band stations: keep original DXF text as-is
 
             xp, yp = _p2p(x, y)
