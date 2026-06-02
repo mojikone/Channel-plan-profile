@@ -23,20 +23,21 @@ PAPER_W = 841.0
 PAPER_H = 594.0
 
 # Plan viewport (absolute paper-space DXF coords)
+# Plan height increased ×1.3 vs original template; profile shrinks to compensate.
 VP_PLAN_X0  = 1003.55
 VP_PLAN_X1  = 1796.55
-VP_PLAN_Y0  = 317.5525
 VP_PLAN_Y1  = 557.5
+VP_PLAN_Y0  = 245.57          # = Y1 - (original_H × 1.3)  → plan H ≈ 312 mm
 VP_PLAN_W   = VP_PLAN_X1 - VP_PLAN_X0   # 793 mm
-VP_PLAN_H   = VP_PLAN_Y1 - VP_PLAN_Y0   # 245.5 mm
+VP_PLAN_H   = VP_PLAN_Y1 - VP_PLAN_Y0   # ≈ 312 mm
 
 # Profile viewport (absolute paper-space DXF coords)
 VP_PROF_X0  = 1003.55
 VP_PROF_X1  = 1796.55
 VP_PROF_Y0  = 47.0
-VP_PROF_Y1  = 309.5525
+VP_PROF_Y1  = VP_PLAN_Y0 - 8.0   # 8 mm gap below plan  → prof Y1 ≈ 237.57
 VP_PROF_W   = VP_PROF_X1 - VP_PROF_X0   # 793 mm
-VP_PROF_H   = VP_PROF_Y1 - VP_PROF_Y0   # 257.3 mm
+VP_PROF_H   = VP_PROF_Y1 - VP_PROF_Y0   # ≈ 190.6 mm
 
 # ── Profile DXF scaling (SewerGEMS Ais-CH1-FP global extents) ─────────────────
 # x: 1 DXF unit = 1 m chainage
@@ -90,6 +91,21 @@ PROF_TEXT_H = {
 # Leaves 25 m of "breathing space" so text at sta 0 and 1+000 is not clipped
 PROF_X_MARGIN = 25.0    # m
 
+# ── Overlay shapefiles ────────────────────────────────────────────────────────
+SHP_BUF_BED = os.path.join(ROOT, "Data", "SHP", "Buffers", "B6 Channel Bed Buffer.shp")
+SHP_BUF_CH  = os.path.join(ROOT, "Data", "SHP", "Buffers", "B6 Channels Buffer 16042026.shp")
+SHP_LANDUSE = os.path.join(ROOT, "Data", "SHP", "Landuse", "LandUSE_block6.shp")
+
+# Brown true-colour (24-bit RGB) for buffer outlines; global width in paper mm
+BUFFER_TRUE_COLOR = (139, 69, 19)   # saddle brown
+BUFFER_GLOBAL_W   = 1.0             # mm paper-space const_width
+BUFFER_LINEWEIGHT = 100             # 1.00 mm fallback lineweight
+
+# Light-grey ACI colour for land-use outlines (thinnest line)
+LANDUSE_ACI_COLOR = 253
+LANDUSE_LINEWEIGHT = 0              # thinnest
+
 # ── ESRI tile cache ────────────────────────────────────────────────────────────
 ESRI_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
 TILE_SIZE = 256
+SAT_TILE_QUALITY = 4096   # target pixel count for zoom-level selection

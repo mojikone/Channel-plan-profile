@@ -23,7 +23,7 @@ from pyproj import Transformer
 from config import (
     SHP_PATH, OUT_VF, IMG_DIR,
     SEGMENT_LEN, PLAN_ALONG_M, PLAN_PERP_M,
-    ESRI_TILE_URL, TILE_SIZE,
+    ESRI_TILE_URL, TILE_SIZE, SAT_TILE_QUALITY,
 )
 
 os.makedirs(OUT_VF, exist_ok=True)
@@ -163,31 +163,55 @@ def _num2lonlat(xt, yt, z):
     return lon, lat
 
 
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+_session_lock = threading.Lock()
+_session = None
+
+def _get_session():
+    global _session
+    if _session is None:
+        import requests
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+        with _session_lock:
+            if _session is None:
+                s = requests.Session()
+                retry = Retry(total=3, backoff_factor=0.3,
+                              status_forcelist=(500, 502, 503, 504))
+                adapter = HTTPAdapter(max_retries=retry,
+                                      pool_connections=32, pool_maxsize=32)
+                s.mount("https://", adapter)
+                s.headers["User-Agent"] = "Mozilla/5.0 PP-Script/2.0"
+                _session = s
+    return _session
+
+
 def _fetch_tile(z, x, y):
-    import requests
     from PIL import Image
     import io
     cache = os.path.join(IMG_DIR, "tiles", f"{z}_{x}_{y}.jpg")
     if os.path.exists(cache):
         return np.array(Image.open(cache).convert("RGB"))
     os.makedirs(os.path.dirname(cache), exist_ok=True)
-    r = requests.get(
-        ESRI_TILE_URL.format(z=z, y=y, x=x),
-        headers={"User-Agent": "Mozilla/5.0 PP-Script/2.0"},
-        timeout=15,
-    )
+    r = _get_session().get(
+        ESRI_TILE_URL.format(z=z, y=y, x=x), timeout=15)
     r.raise_for_status()
     img = Image.open(io.BytesIO(r.content)).convert("RGB")
     img.save(cache, "JPEG", quality=90)
     return np.array(img)
 
 
-def fetch_background(bbox_utm, epsg=32640, target_px=2048):
+def fetch_background(bbox_utm, epsg=32640, target_px=None):
     """
     Download and stitch tiles covering bbox_utm (xmin,ymin,xmax,ymax).
     Returns (img_array, x_min_3857, y_max_3857, px_size_3857)
     so callers can map UTM → pixel for satellite sampling.
     """
+    if target_px is None:
+        target_px = SAT_TILE_QUALITY
+
     from pyproj import Transformer
     t4 = Transformer.from_crs(f"EPSG:{epsg}", "EPSG:4326", always_xy=True)
     t3 = Transformer.from_crs(f"EPSG:{epsg}", "EPSG:3857", always_xy=True)
@@ -197,13 +221,13 @@ def fetch_background(bbox_utm, epsg=32640, target_px=2048):
     lon0, lon1 = min(lon0,lon1), max(lon0,lon1)
     lat0, lat1 = min(lat0,lat1), max(lat0,lat1)
 
-    # Choose zoom
+    # Cap at z=18: z=19 tiles are missing for many rural areas in this region
     z = 14
-    for zi in range(19, 10, -1):
+    for zi in range(18, 10, -1):
         xt0, yt0 = _deg2num(lat1, lon0, zi)
         xt1, yt1 = _deg2num(lat0, lon1, zi)
         cols = abs(xt1-xt0)+1; rows = abs(yt1-yt0)+1
-        if cols * rows <= 96 and cols * TILE_SIZE >= target_px // 2:
+        if cols * rows <= 400 and cols * TILE_SIZE >= target_px // 4:
             z = zi; break
 
     xt0, yt0 = _deg2num(lat1, lon0, z)
@@ -213,12 +237,30 @@ def fetch_background(bbox_utm, epsg=32640, target_px=2048):
 
     cols = xt1-xt0+1; rows = yt1-yt0+1
     canvas = np.zeros((rows*TILE_SIZE, cols*TILE_SIZE, 3), dtype=np.uint8)
-    print(f"    Satellite: z={z} {cols}x{rows} tiles", end="", flush=True)
-    for iy, ty in enumerate(range(yt0, yt1+1)):
-        for ix, tx in enumerate(range(xt0, xt1+1)):
+
+    # Build full task list; cached tiles are loaded inline, missing ones fetched in parallel
+    tasks = [(iy, ix, ty, tx)
+             for iy, ty in enumerate(range(yt0, yt1+1))
+             for ix, tx in enumerate(range(xt0, xt1+1))]
+    n_total  = len(tasks)
+    n_cached = sum(1 for _, _, ty, tx in tasks
+                   if os.path.exists(os.path.join(IMG_DIR, "tiles", f"{z}_{tx}_{ty}.jpg")))
+    n_fetch  = n_total - n_cached
+    print(f"    Satellite: z={z} {cols}x{rows} tiles "
+          f"({n_cached} cached, {n_fetch} to download)", end="", flush=True)
+
+    def _place(iy, ix, tile):
+        canvas[iy*TILE_SIZE:(iy+1)*TILE_SIZE,
+               ix*TILE_SIZE:(ix+1)*TILE_SIZE] = tile
+
+    workers = min(32, n_total)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futs = {pool.submit(_fetch_tile, z, tx, ty): (iy, ix)
+                for iy, ix, ty, tx in tasks}
+        for fut in as_completed(futs):
+            iy, ix = futs[fut]
             try:
-                canvas[iy*TILE_SIZE:(iy+1)*TILE_SIZE,
-                       ix*TILE_SIZE:(ix+1)*TILE_SIZE] = _fetch_tile(z, tx, ty)
+                _place(iy, ix, fut.result())
             except Exception:
                 pass
     print(" done")
@@ -242,11 +284,12 @@ def warp_satellite_to_frame(vf, epsg=32640, out_w=None, out_h=None):
     Download satellite tiles covering vf's bounding box and warp them
     into the view frame's local coordinate system (channel goes left-right).
     Returns a (H, W, 3) uint8 numpy array.
+    Uses bilinear interpolation for best quality.
     """
     from pyproj import Transformer
 
-    if out_w is None: out_w = int(PLAN_ALONG_M * 0.7)   # ~770px at ~1.4m/px
-    if out_h is None: out_h = int(PLAN_PERP_M  * 0.7)
+    if out_w is None: out_w = int(vf.along_m * 4)
+    if out_h is None: out_h = int(vf.perp_m  * 4)
 
     # Bounding box in UTM (axis-aligned, covers the rotated frame)
     corners = np.array(vf.corners_utm)
@@ -296,13 +339,22 @@ def warp_satellite_to_frame(vf, epsg=32640, out_w=None, out_h=None):
     col_f = (x3_arr - x3_nw) / px_x
     row_f = (y3_arr - y3_nw) / px_y   # px_y is negative
 
-    # Bilinear sample
+    # Bilinear interpolation (numpy-only, no scipy dependency)
     ch, cw = canvas.shape[:2]
-    col_i = np.clip(col_f.astype(int), 0, cw-1)
-    row_i = np.clip(row_f.astype(int), 0, ch-1)
-    warped = canvas[row_i, col_i]
+    row_lo = np.clip(np.floor(row_f).astype(int), 0, ch - 1)
+    row_hi = np.clip(row_lo + 1,                  0, ch - 1)
+    col_lo = np.clip(np.floor(col_f).astype(int), 0, cw - 1)
+    col_hi = np.clip(col_lo + 1,                  0, cw - 1)
+    wr = (row_f - np.floor(row_f))[:, :, np.newaxis]
+    wc = (col_f - np.floor(col_f))[:, :, np.newaxis]
+    warped = (
+        (1 - wr) * (1 - wc) * canvas[row_lo, col_lo] +
+        (1 - wr) * wc       * canvas[row_lo, col_hi] +
+        wr       * (1 - wc) * canvas[row_hi, col_lo] +
+        wr       * wc       * canvas[row_hi, col_hi]
+    ).clip(0, 255).astype(np.uint8)
 
-    return warped.astype(np.uint8)
+    return warped
 
 
 # ══════════════════════════════════════════════════════════════════════════════
