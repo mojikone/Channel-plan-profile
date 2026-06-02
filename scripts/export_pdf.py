@@ -26,13 +26,13 @@ import pikepdf
 from config import (
     PAPER_ORIG_X, PAPER_ORIG_Y, PAPER_W, PAPER_H,
     VP_PLAN_X0, VP_PLAN_Y0, VP_PLAN_W, VP_PLAN_H,
+    OUT_DXF, OUT_PDF,
 )
 # Key-map viewport (full content area)
 from make_keymap import KM_VP_X0, KM_VP_Y0, KM_VP_W, KM_VP_H
 
-BASE_DIR     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DXF_DIR      = os.path.join(BASE_DIR, "DXF")
-PDF_DIR      = os.path.join(BASE_DIR, "PDF")
+DXF_DIR      = OUT_DXF
+PDF_DIR      = OUT_PDF
 PDF_COMBINED = os.path.join(PDF_DIR, "Combined")
 os.makedirs(PDF_DIR, exist_ok=True)
 os.makedirs(PDF_COMBINED, exist_ok=True)

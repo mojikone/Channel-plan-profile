@@ -1,19 +1,25 @@
 """
-W2 configuration — plan-profile sheet production.
+Channel plan-profile sheet generator — configuration.
 All measurements in mm (paper space) unless noted.
+
+All paths are relative to the repository root (the folder containing this file).
 """
 import os, datetime
 
-ROOT    = r"D:\Mojtaba\Renardet\2224 WS11\Block 06 SewerGEMS"
-WORK_DIR= os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DXF_DIR = os.path.join(ROOT, "Data", "DXF")
-SHP_PATH= os.path.join(ROOT, "Data", "SHP", "Channels Block 06.shp")
-TMPL    = os.path.join(ROOT, "Data", "Template", "Plan Profile.dxf")
-IMG_DIR = os.path.join(WORK_DIR, "IMG")
+# Repository root = folder containing this script
+ROOT     = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(ROOT, "Data")
 
-OUT_VF  = os.path.join(WORK_DIR, "view_frames")
-OUT_DXF = os.path.join(WORK_DIR, "DXF")
-OUT_PDF = os.path.join(WORK_DIR, "PDF")
+# ── Input paths ───────────────────────────────────────────────────────────────
+DXF_DIR  = os.path.join(DATA_DIR, "DXF")                              # SewerGEMS profile DXFs
+SHP_PATH = os.path.join(DATA_DIR, "SHP", "Channels.shp")             # channel alignment shapefile
+TMPL     = os.path.join(DATA_DIR, "Template", "Plan Profile.dxf")    # A1 title-block template
+
+# ── Output paths ──────────────────────────────────────────────────────────────
+IMG_DIR  = os.path.join(ROOT, "IMG")                 # satellite tile cache
+OUT_VF   = os.path.join(ROOT, "view_frames")         # view-frame debug outputs
+OUT_DXF  = os.path.join(ROOT, "DXF")                # generated plan+profile DXFs
+OUT_PDF  = os.path.join(ROOT, "PDF")                # generated PDFs
 
 # ── Template paper-space layout (DXF absolute coords) ─────────────────────────
 # Paper A1 landscape 841×594 mm, origin shifted to (974.55, -17.15)
@@ -100,9 +106,9 @@ CATCHMENT_ORDER = ["Ais", "Rus", "Ban", "Maa", "Taw", "Ful"]
 DOC_NO_PREFIX   = "2224-PD-HY-PP-B6"
 
 # ── Overlay shapefiles ────────────────────────────────────────────────────────
-SHP_BUF_BED = os.path.join(ROOT, "Data", "SHP", "Buffers", "B6 Channel Bed Buffer.shp")
-SHP_BUF_CH  = os.path.join(ROOT, "Data", "SHP", "Buffers", "B6 Channels Buffer 16042026.shp")
-SHP_LANDUSE = os.path.join(ROOT, "Data", "SHP", "Landuse", "LandUSE_block6.shp")
+SHP_BUF_BED = os.path.join(DATA_DIR, "SHP", "Buffers", "Channel Bed Buffer.shp")
+SHP_BUF_CH  = os.path.join(DATA_DIR, "SHP", "Buffers", "Channels Buffer.shp")
+SHP_LANDUSE = os.path.join(DATA_DIR, "SHP", "Landuse", "LandUse.shp")
 
 # Brown true-colour (24-bit RGB) for buffer outlines; global width in paper mm
 BUFFER_TRUE_COLOR = (139, 69, 19)   # saddle brown

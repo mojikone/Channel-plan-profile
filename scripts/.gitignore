@@ -1,0 +1,31 @@
+# ── Input data (user-provided, not committed) ─────────────────────────────────
+Data/DXF/*.dxf
+Data/SHP/**/*.shp
+Data/SHP/**/*.dbf
+Data/SHP/**/*.shx
+Data/SHP/**/*.prj
+Data/SHP/**/*.cpg
+Data/SHP/**/*.qmd
+Data/Template/*.dxf
+
+# ── Generated outputs (auto-created by scripts) ────────────────────────────────
+DXF/*.dxf
+DXF/*.jpg
+DXF/*.png
+DXF/*.jpeg
+PDF/*.pdf
+PDF/Combined/*.pdf
+IMG/tiles/
+view_frames/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+
+# ── Always keep folder placeholders ──────────────────────────────────────────
+!**/.gitkeep
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.zip
+*.log
